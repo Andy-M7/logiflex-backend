@@ -4,12 +4,15 @@ import { ConfigModule } from '@nestjs/config';
 
 import { AuthModule } from './auth/auth.module';
 import { FirebaseModule } from './firebase/firebase.module';
+import { EmployeesModule } from './employees/employees.module';
+import { AttendanceModule } from './attendance/attendance.module';
 
 @Module({
   imports: [
     // ⚡ Habilita .env y variables globales
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env',
     }),
 
     // ⚡ Base de datos
@@ -26,6 +29,8 @@ import { FirebaseModule } from './firebase/firebase.module';
 
     FirebaseModule,
     AuthModule,
+    EmployeesModule,
+    AttendanceModule
   ],
 })
 export class AppModule {}
