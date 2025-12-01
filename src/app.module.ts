@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { EmployeesModule } from './employees/employees.module';
 import { AttendanceModule } from './attendance/attendance.module';
+import { ProductsModule } from './products/products.module';
 
 @Module({
   imports: [
@@ -30,7 +31,8 @@ import { AttendanceModule } from './attendance/attendance.module';
     FirebaseModule,
     AuthModule,
     EmployeesModule,
-    AttendanceModule
+    AttendanceModule,
+    ProductsModule
   ],
 })
 export class AppModule {}
