@@ -1,42 +1,33 @@
-import {
-    BadRequestException,
-    Injectable,
-    InternalServerErrorException,
-  } from '@nestjs/common';
-  import * as admin from 'firebase-admin';
-  import { CreateAuthDto } from '../auth/dto/create-auth.dto';
-  
-  @Injectable()
-  export class FirebaseService {
-    async createUser(dto: CreateAuthDto) {
-      try {
-        return await admin.auth().createUser({
-          email: dto.email,
-          password: dto.password,
-          displayName: dto.fullName,
-        });
-      } catch (error) {
-        this.handleError(error);
-        throw error;
-      }
-    }
-  
-    async verifyToken(token: string) {
-      try {
-        return await admin.auth().verifyIdToken(token);
-      } catch (error) {
-        this.handleError(error);
-      }
-    }
-  
-    private handleError(error: any) {
-      console.log(error);
-  
-      if (error.code === 'auth/email-already-exists') {
-        throw new BadRequestException('El correo ya existe en Firebase');
-      }
-  
-      throw new InternalServerErrorException('Error interno con Firebase Auth');
-    }
+import { Inject, Injectable } from '@nestjs/common';
+import * as admin from 'firebase-admin';
+
+@Injectable()
+export class FirebaseService {
+  constructor(
+    @Inject('FIREBASE_ADMIN') private readonly firebaseApp: admin.app.App,
+  ) {}
+
+  // Acceso al sistema de autenticación
+  auth() {
+    return this.firebaseApp.auth();
   }
-  
+
+  // Crear usuario
+  async createUser(email: string, password: string, displayName: string) {
+    return this.auth().createUser({
+      email,
+      password,
+      displayName,
+    });
+  }
+
+  // Asignar claims (roles)
+  async setUserRole(uid: string, role: string) {
+    return this.auth().setCustomUserClaims(uid, { role });
+  }
+
+  // Verificar token del frontend
+  async verifyToken(idToken: string) {
+    return this.auth().verifyIdToken(idToken, true);
+  }
+}

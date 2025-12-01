@@ -1,11 +1,18 @@
+// src/app.module.ts
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { AuthModule } from './auth/auth.module';
 import { FirebaseModule } from './firebase/firebase.module';
+import { UsersModule } from './users/users.module';
+import { EmployeesModule } from './employees/employees.module';
+import { ProductsModule } from './products/products.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
@@ -18,6 +25,11 @@ import { FirebaseModule } from './firebase/firebase.module';
     }),
 
     FirebaseModule,
+    AuthModule,       // ⭐ YA ACTIVADO
+    UsersModule,
+    EmployeesModule,
+    ProductsModule,
+     UsersModule,  // 👈 IMPORTANTE
     AuthModule,
   ],
 })

@@ -1,19 +1,20 @@
-import { Controller, Post, Body } from '@nestjs/common';
+// src/auth/auth.controller.ts
+import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { VerifyAuthDto } from './dto/verify-auth.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('register')
-  register(@Body() dto: CreateAuthDto) {
-    return this.authService.register(dto);
-  }
+  @Post('login')
+  async login(@Body() body: LoginDto) {
+    console.log("BODY RECIBIDO >>> ", body);
 
-  @Post('verify')
-  verify(@Body() dto: VerifyAuthDto) {
-    return this.authService.verify(dto);
+    if (!body.idToken) {
+      throw new UnauthorizedException("Token requerido");
+    }
+
+    return this.authService.login(body.idToken);
   }
 }

@@ -1,71 +1,47 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-
+// src/auth/auth.service.ts
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { FirebaseService } from '../firebase/firebase.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { VerifyAuthDto } from './dto/verify-auth.dto';
-
-import { User } from './entities/auth.entity';
-import { Company } from './entities/company.entity';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepo: Repository<User>,
-
-    @InjectRepository(Company)
-    private readonly companyRepo: Repository<Company>,
-
     private readonly firebaseService: FirebaseService,
+    private readonly usersService: UsersService,
   ) {}
 
-  async register(dto: CreateAuthDto) {
-    const exists = await this.userRepo.findOne({ where: { email: dto.email } });
-    if (exists) throw new BadRequestException('El correo ya está registrado');
+  async login(idToken: string) {
+    try {
+      // 1️⃣ Verificar token con Firebase (ya implementado en tu FirebaseService)
+      const decoded = await this.firebaseService.verifyToken(idToken);
 
-    // 1) Crear usuario en Firebase
-    const fbUser = await this.firebaseService.createUser(dto);
+      const email = decoded.email;
+      if (!email) {
+        throw new UnauthorizedException("Token inválido: no se encontró correo.");
+      }
 
-    // 2) Asegurar empresa Logisti Flex
-    let company = await this.companyRepo.findOne({ where: { name: 'Logisti Flex' } });
+      // 2️⃣ Buscar usuario local
+      const user = await this.usersService.findByEmail(email);
+      if (!user) {
+        throw new UnauthorizedException("Usuario no registrado en LogiFlex.");
+      }
 
-    if (!company) {
-      company = this.companyRepo.create({
-        name: 'Logisti Flex',
-        industry: 'Alimentos para mascotas',
-      });
-      await this.companyRepo.save(company);
+      if (!user.isActive) {
+        throw new UnauthorizedException("Usuario desactivado. Contacte al administrador.");
+      }
+
+      // 3️⃣ Respuesta al frontend
+      return {
+        ok: true,
+        uid: decoded.uid,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+      };
+
+    } catch (e) {
+      console.log("🔥 ERROR LOGIN AUTH SERVICE >>>", e);
+      throw new UnauthorizedException("Token inválido o expirado");
     }
-
-    // 3) Crear usuario interno
-    const user = this.userRepo.create({
-      email: dto.email,
-      fullName: dto.fullName,
-      firebaseUUID: fbUser.uid,
-      company,
-    });
-
-    await this.userRepo.save(user);
-
-    return {
-      message: 'Usuario registrado correctamente',
-      user,
-    };
-  }
-
-  async verify(dto: VerifyAuthDto) {
-    const decoded = await this.firebaseService.verifyToken(dto.token);
-    if (!decoded) throw new UnauthorizedException('Token inválido');
-
-    const user = await this.userRepo.findOne({ where: { firebaseUUID: decoded.uid } });
-
-    if (!user) throw new UnauthorizedException('Usuario no existe en BD');
-
-    return {
-      message: 'Token válido',
-      user,
-    };
   }
 }
